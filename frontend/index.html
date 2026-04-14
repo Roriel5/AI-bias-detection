@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bias Autopsy — Detect, explain, and fix hidden bias in AI models with plain-language reports for non-technical stakeholders.">
+    <title>Bias Autopsy — AI Fairness Auditor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Background animated orbs -->
+    <div class="bg-orbs" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-brand">
+            <span class="nav-icon">🔬</span>
+            <span class="nav-title">Bias Autopsy</span>
+        </div>
+        <div class="nav-links">
+            <a href="#upload-section" class="nav-link">Upload</a>
+            <a href="#results-section" class="nav-link">Results</a>
+            <a href="#about-section" class="nav-link">About</a>
+        </div>
+        <div class="nav-api">
+            <button class="btn btn-ghost" id="api-key-toggle" aria-label="Set API Key">
+                <span class="key-icon">🔑</span>
+                <span class="key-label">API Key</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- API Key Modal -->
+    <div class="modal-overlay" id="api-modal" hidden>
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h3>Gemini API Key</h3>
+                <button class="modal-close" id="api-modal-close" aria-label="Close">&times;</button>
+            </div>
+            <p class="modal-desc">Required for AI-powered explanations and fix recommendations. Get a free key at <a href="https://ai.google.dev" target="_blank" rel="noopener">ai.google.dev</a></p>
+            <div class="input-group">
+                <input type="password" id="api-key-input" class="input" placeholder="Paste your Gemini API key..." autocomplete="off">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="api-key-save">Save Key</button>
+            </div>
+            <p class="modal-note">🔒 Key is stored in your browser only — never sent to our server.</p>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero-section">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">Google Solution Challenge 2026</div>
+                <h1 class="hero-title">
+                    Detect <span class="gradient-text">Hidden Bias</span> in AI Models
+                </h1>
+                <p class="hero-subtitle">
+                    Upload your model's predictions and instantly get fairness metrics,
+                    plain-language explanations, and actionable fix recommendations.
+                </p>
+                <a href="#upload-section" class="btn btn-primary btn-lg hero-cta">
+                    Start Audit
+                    <svg class="btn-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat-card glass-card">
+                    <span class="stat-number">3</span>
+                    <span class="stat-label">Fairness Metrics</span>
+                </div>
+                <div class="stat-card glass-card">
+                    <span class="stat-number">AI</span>
+                    <span class="stat-label">Powered by Gemini</span>
+                </div>
+                <div class="stat-card glass-card">
+                    <span class="stat-number">PDF</span>
+                    <span class="stat-label">Report Cards</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Section -->
+    <section class="section" id="upload-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-step">01</span>
+                <h2 class="section-title">Upload Predictions</h2>
+                <p class="section-desc">Upload a CSV containing your model's ground truth labels, predictions, and sensitive attributes.</p>
+            </div>
+
+            <div class="upload-area glass-card" id="upload-area">
+                <div class="upload-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <p class="upload-text">Drag & drop your CSV here, or <label for="file-input" class="upload-browse">browse</label></p>
+                <p class="upload-hint">CSV files only — max 50 MB</p>
+                <input type="file" id="file-input" accept=".csv" hidden>
+            </div>
+
+            <!-- File Info (shown after upload) -->
+            <div class="file-info glass-card" id="file-info" hidden>
+                <div class="file-info-header">
+                    <div class="file-meta">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <div>
+                            <span class="file-name" id="file-name">—</span>
+                            <span class="file-size" id="file-size">—</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" id="file-remove" aria-label="Remove file">✕</button>
+                </div>
+
+                <!-- Data Preview -->
+                <div class="data-preview" id="data-preview">
+                    <h4>Data Preview</h4>
+                    <div class="table-wrapper">
+                        <table class="preview-table" id="preview-table"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Configuration Section -->
+    <section class="section" id="config-section" hidden>
+        <div class="container">
+            <div class="section-header">
+                <span class="section-step">02</span>
+                <h2 class="section-title">Configure Columns</h2>
+                <p class="section-desc">Tell us which columns represent what.</p>
+            </div>
+
+            <div class="config-grid">
+                <div class="config-card glass-card">
+                    <label class="config-label" for="truth-col">
+                        <span class="config-icon">🎯</span>
+                        Ground Truth Column
+                    </label>
+                    <p class="config-hint">The actual labels (0/1)</p>
+                    <select id="truth-col" class="select"></select>
+                </div>
+
+                <div class="config-card glass-card">
+                    <label class="config-label" for="pred-col">
+                        <span class="config-icon">🤖</span>
+                        Predictions Column
+                    </label>
+                    <p class="config-hint">Your model's predictions (0/1)</p>
+                    <select id="pred-col" class="select"></select>
+                </div>
+
+                <div class="config-card glass-card config-card-wide">
+                    <label class="config-label">
+                        <span class="config-icon">⚖️</span>
+                        Sensitive Attributes
+                    </label>
+                    <p class="config-hint">Select one or more (e.g., sex, race, age_group)</p>
+                    <div class="checkbox-grid" id="sensitive-checkboxes"></div>
+                </div>
+            </div>
+
+            <div class="config-actions">
+                <button class="btn btn-primary btn-lg" id="run-analysis-btn" disabled>
+                    <span class="btn-loader" hidden></span>
+                    <span class="btn-text">Run Bias Autopsy</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section class="section" id="results-section" hidden>
+        <div class="container">
+            <div class="section-header">
+                <span class="section-step">03</span>
+                <h2 class="section-title">Analysis Results</h2>
+                <p class="section-desc" id="results-desc">—</p>
+            </div>
+
+            <!-- Metrics Cards -->
+            <div id="metrics-container"></div>
+
+            <!-- Charts -->
+            <div class="charts-grid" id="charts-container"></div>
+
+            <!-- Intersectional Analysis -->
+            <div id="intersectional-container" hidden>
+                <div class="section-divider">
+                    <span class="divider-label">Intersectional Analysis</span>
+                </div>
+                <div id="intersectional-metrics"></div>
+                <div class="charts-grid" id="intersectional-charts"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Explanation Section -->
+    <section class="section" id="explanation-section" hidden>
+        <div class="container">
+            <div class="section-header">
+                <span class="section-step">04</span>
+                <h2 class="section-title">AI Explanation & Fixes</h2>
+                <p class="section-desc">Gemini-powered plain-language analysis</p>
+            </div>
+
+            <div class="explanation-grid">
+                <!-- Severity Score -->
+                <div class="severity-card glass-card" id="severity-card">
+                    <div class="severity-ring" id="severity-ring">
+                        <svg viewBox="0 0 120 120" class="severity-svg">
+                            <circle cx="60" cy="60" r="54" class="severity-track"/>
+                            <circle cx="60" cy="60" r="54" class="severity-fill" id="severity-fill"/>
+                        </svg>
+                        <span class="severity-number" id="severity-number">0</span>
+                    </div>
+                    <span class="severity-label">Bias Severity</span>
+                </div>
+
+                <!-- Impact -->
+                <div class="explain-card glass-card" id="impact-card">
+                    <div class="explain-card-header">
+                        <span class="explain-icon">💥</span>
+                        <h3>Real-World Impact</h3>
+                    </div>
+                    <p class="explain-text" id="impact-text">—</p>
+                </div>
+
+                <!-- Root Cause -->
+                <div class="explain-card glass-card" id="root-cause-card">
+                    <div class="explain-card-header">
+                        <span class="explain-icon">🔍</span>
+                        <h3>Root Cause</h3>
+                    </div>
+                    <p class="explain-text" id="root-cause-text">—</p>
+                </div>
+            </div>
+
+            <!-- Fixes -->
+            <div class="fixes-container" id="fixes-container">
+                <h3 class="fixes-title">Recommended Fixes</h3>
+                <div class="fixes-list" id="fixes-list"></div>
+            </div>
+
+            <!-- Report Download -->
+            <div class="report-actions">
+                <button class="btn btn-primary btn-lg" id="download-report-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Bias Report Card (PDF)
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section section-alt" id="about-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">How It Works</h2>
+            </div>
+            <div class="about-grid">
+                <div class="about-card glass-card">
+                    <span class="about-step">1</span>
+                    <h3>Upload</h3>
+                    <p>Upload a CSV with your model's ground truth labels, predictions, and sensitive attributes (e.g. gender, race).</p>
+                </div>
+                <div class="about-card glass-card">
+                    <span class="about-step">2</span>
+                    <h3>Analyze</h3>
+                    <p>We compute Demographic Parity, Equalized Odds, and Disparate Impact across every group — including intersectional analysis.</p>
+                </div>
+                <div class="about-card glass-card">
+                    <span class="about-step">3</span>
+                    <h3>Explain</h3>
+                    <p>Gemini AI translates the numbers into plain-language explanations, identifies root causes, and suggests ranked fixes.</p>
+                </div>
+                <div class="about-card glass-card">
+                    <span class="about-step">4</span>
+                    <h3>Report</h3>
+                    <p>Download a professional PDF report card to share with stakeholders, compliance teams, or auditors.</p>
+                </div>
+            </div>
+
+            <div class="metrics-explainer glass-card">
+                <h3>What the Metrics Mean</h3>
+                <div class="table-wrapper">
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>What It Measures</th>
+                                <th>Fair Range</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Demographic Parity Difference</strong></td>
+                                <td>Difference in positive prediction rates across groups</td>
+                                <td><span class="badge badge-green">&lt; 0.05</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Equalized Odds Difference</strong></td>
+                                <td>Max difference in TPR and FPR across groups</td>
+                                <td><span class="badge badge-green">&lt; 0.05</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Disparate Impact Ratio</strong></td>
+                                <td>Ratio of min/max positive prediction rates</td>
+                                <td><span class="badge badge-green">&gt; 0.8</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>Built for <strong>Google Solution Challenge 2026</strong> · Bias Autopsy</p>
+        </div>
+    </footer>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loading-overlay" hidden>
+        <div class="loading-card glass-card">
+            <div class="loading-spinner"></div>
+            <p class="loading-text" id="loading-text">Analyzing...</p>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
